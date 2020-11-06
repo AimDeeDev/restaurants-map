@@ -1,0 +1,66 @@
+[
+   {
+      "restaurantName": "Wok show",
+      "address": "Greifenhagener Str. 31, 10437 Berlin",
+      "lat": 52.551993,
+      "long": 13.419314,
+      "ratings": [
+         {
+            "stars": 4,
+            "comment": "Great! But not many veggie options."
+         },
+         {
+            "stars": 5,
+            "comment": "My favorite restaurant!"
+         }
+      ]
+   },
+   {
+      "restaurantName": "jaja",
+      "address": "Weichselstraße 7, 12043 Berlin",
+      "lat": 52.484257,
+      "long": 13.433153,
+      "ratings": [
+         {
+            "stars": 5,
+            "comment": "Tiny pizzeria next to Sacre Coeur!"
+         },
+         {
+            "stars": 5,
+            "comment": "Meh, it was fine."
+         }
+      ]
+   },
+   {
+      "restaurantName": "I due forni",
+      "address": "Schönhauser Allee 12, 10119 Berlin",
+      "lat": 52.530983,
+      "long": 13.412634,
+      "ratings": [
+         {
+            "stars": 5,
+            "comment": "Tiny pizzeria next to Sacre Coeur!"
+         },
+         {
+            "stars": 3,
+            "comment": "Meh, it was fine."
+         }
+      ]
+   },
+   {
+      "restaurantName": "BRLO Brwhouse",
+      "address": "Schöneberger Str. 16, 10963 Berlin",
+      "lat": 52.501089,
+      "long": 13.373699,
+      "ratings": [
+         {
+            "stars": 2,
+            "comment": "Tiny pizzeria next to Sacre Coeur!"
+         },
+         {
+            "stars": 3,
+            "comment": "Meh, it was fine."
+         }
+      ]
+   }
+]

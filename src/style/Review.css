@@ -1,0 +1,19 @@
+.review {
+    margin-bottom: 30px;
+}
+
+.review * {
+    margin: 0;
+}
+
+/* .review p {
+    margin: 5px;
+} */
+
+.review p:last-of-type {
+    margin: 15px 0;
+}
+
+.review hr {
+    margin-top: 25px;
+}
