@@ -86,23 +86,12 @@ class Restaurant extends Component {
         };
         let updatedReviews = this.state.reviews;
         updatedReviews.push(newReview);
-        let updatedAvgRatings = this.getRestaurantAverageRating(updatedReviews);
         this.setState(prevState => {
             return {
                 reviews: updatedReviews,
-                avgRatings: updatedAvgRatings,
                 addReview: !prevState
             }
         });
-    }
-
-    getRestaurantAverageRating = (ratings) => {
-        let sum = 0;
-        let avg = 0;
-        for (let rating of ratings) {
-            sum += rating.rating;
-        }
-        return avg = Math.ceil(sum / ratings.length)
     }
 
     render() {
@@ -119,7 +108,7 @@ class Restaurant extends Component {
             <div className="restaurant">
                 <div className="restaurant-display">
                     <div className="restaurant-img">
-                        <img src={this.state.imgUrl} />
+                        <img src={this.state.imgUrl} alt="Restaurant's street view" />
                     </div>
                     <div className="restaurant-info">
                         <div>

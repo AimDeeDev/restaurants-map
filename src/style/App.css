@@ -34,3 +34,18 @@
   justify-content: center;
   align-items: center;
 }
+
+.info-window {
+  border: 5px solid grey;
+  border-radius: 5px;
+  padding: 5px;
+  background-color: #dee3e0;
+}
+
+.gm-style .gm-style-iw-c{
+  padding: 0;
+}
+
+.gm-style .gm-style-iw-t::after {
+  background: linear-gradient(45deg,grey 50%,rgba(255,255,255,0) 51%,rgba(255,255,255,0) 100%);
+}
