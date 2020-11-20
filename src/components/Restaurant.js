@@ -35,7 +35,8 @@ class Restaurant extends Component {
 
     /**
     * Set the state of "showReviews" to its opposite previous
-    * state when the "More info" button is clicked
+    * state and set the state of "addReview" to false
+    * when the "More info" button is clicked
     * 
     */
     handleMoreInfoClick = () => {

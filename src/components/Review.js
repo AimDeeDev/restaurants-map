@@ -2,6 +2,7 @@ import React from 'react';
 import '../style/Review.css';
 
 function Review(props) {
+    // Display the number of stars based on the rating
     let nbStars = "";
     for(let i = 1; i <= props.rating; i++){
         nbStars = nbStars + '\u2605 '

@@ -1,6 +1,13 @@
 import React from 'react'
 import '../style/Filters.css'
 
+  /**
+  * Renders 2 select dropdow lists dynamically 
+  * populated with values depending on the current
+  * min/max values
+  * 
+  */
+
 function Filters(props) {
     return (
         <div id="filters">

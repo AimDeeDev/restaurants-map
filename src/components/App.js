@@ -7,7 +7,8 @@ import Form from './Form'
 import Review from './Review'
 
 // API key
-const apiKey = "AIzaSyAxque6IU_OvMQ_IRfTkq3oscFYg5mxlu8";
+const apiKey = "";
+
 // Endpoint of the Place Search API
 const placesSearchApiEndpoint = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?type=restaurant&keyword=restaurant&key=" + apiKey;
 // Endpoint of the Place Details API
@@ -22,33 +23,38 @@ class App extends Component {
     super();
     this.state = {
       isLoading: false,
-      restaurantsData: [],
+      showForm: false,
+      isMarkerClicked: false,
       minRating: "1",
       maxRating: "5",
+      radius: "1500",
       zoom: 14,
-      radius: "2000",
       map: null,
-      bounds: {},
-      restaurantsList: [],
-      showForm: false,
-      clickedLocation: {
-        lat: 0,
-        lng: 0
-      },
       infoMarkerClicked: "",
-      isMarkerClicked: false,
+      apiData: [],
+      restaurantsList: [],
+      addedRestaurantsByUser: [],
       reviewsMarkerClicked: [],
+      bounds: {},
       center: {
         lat: -3.745,
         lng: -38.523
       },
+      clickedLocation: {
+        lat: 0,
+        lng: 0
+      }
     };
     this.handleFiltersChange = this.handleFiltersChange.bind(this);
     this.handleMapClick = this.handleMapClick.bind(this);
   }
 
+  /**
+  * Ask for user's geolocation via the javascript 
+  * interface "navigator "when the component is mounted
+  * 
+  */
   componentDidMount() {
-    this.getRestaurantsData(this.state.center.lat, this.state.center.lng, this.state.radius);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         this.getPositionSuccess,
@@ -59,18 +65,59 @@ class App extends Component {
     }
   }
 
-  getRestaurantsData = (lat, lng, radius) => {
-    this.setState({ isLoading: true });
+  /**
+  * Fetch API's data based on the current position of the user geolocated
+  * through the javascript geolocation function. 
+  * Set the new state of "center"
+  * 
+  * @param {object} position
+  */
+  getPositionSuccess = (position) => {
+    this.setState({ center: { lat: position.coords.latitude, lng: position.coords.longitude } });
+  }
+
+  /**
+  * Log error message if geolocation failed
+  * 
+  * @param {object} error
+  */
+  getPositionError = (error) => {
+    console.log("Error");
+    console.error("Error Code = " + error.code + " - " + error.message);
+  }
+
+  /**
+  * Get the data from the APIs based on the position and the radius.
+  * Two APIs are fetched:
+  *   1. one call to the Places Search API to get place_id of all restaurants
+  *   2. as many calls as there are restaurants from 1. to the Places Details API
+  * 
+  * This function is called once the map is idle
+  * 
+  * @param {integer} lat
+  * @param {integer} lng
+  * @param {integer} radius
+  */
+  getApiData = (lat, lng, radius) => {
+    // Reset state of "isLoading", "apiData" and "restaurantsList" to avoid duplicated components
+    this.setState({
+      isLoading: true,
+      apiData: [],
+      restaurantsList: []
+    });
     let apiPlaceSearchUrl = placesSearchApiEndpoint + "&location=" + lat + "," + lng + "&radius=" + radius;
     let apiPlacesData = [];
+    // Fetch data from Places Search API
     fetch(apiPlaceSearchUrl)
       .then(response => response.ok ? response.json() : console.log("Fetch Place Search API data failed"))
       .then(data => {
         for (let result of data.results) {
           let apiPlaceDetailsUrl = placesDetailsApiEndpoint + result.place_id;
+          // Fetch data from Places Details API
           fetch(apiPlaceDetailsUrl)
             .then(response => response.ok ? response.json() : console.log("Fetch Place Details API data failed"))
             .then(data => {
+              // Add restaurant's data to an array and update the "restaurantsList"
               apiPlacesData.push(data);
               this.getRestaurantsList(this.state.minRating, this.state.maxRating, this.state.bounds);
             })
@@ -78,24 +125,15 @@ class App extends Component {
         }
       })
       .then(() => {
+        // Once all data is fetched, set state of "apiData" and "isLoading"
         if (apiPlacesData != null) {
           this.setState({
-            restaurantsData: apiPlacesData,
+            apiData: apiPlacesData,
             isLoading: false
           });
         }
       })
       .catch(err => console.log("Error when fetching Place Search API", err));
-  }
-
-  getPositionSuccess = (position) => {
-    this.getRestaurantsData(position.coords.latitude, position.coords.longitude)
-    this.setState({ center: { lat: position.coords.latitude, lng: position.coords.longitude } })
-  }
-
-  getPositionError = (error) => {
-    console.log("Error");
-    console.error("Error Code = " + error.code + " - " + error.message);
   }
 
   /**
@@ -105,7 +143,10 @@ class App extends Component {
   */
   handleMapLoad = (map) => {
     let bounds = map.getBounds();
-    this.setState({ map: map, bounds: bounds })
+    this.setState({
+      map: map,
+      bounds: bounds
+    });
   }
 
   /**
@@ -115,10 +156,9 @@ class App extends Component {
   */
   handleMapIdle = () => {
     const bounds = this.state.map.getBounds();
-    // const center = this.state.map.getCenter();
+    const center = this.state.map.getCenter();
     this.setState({ bounds: bounds });
-    // this.getRestaurantsData(center.lat(), center.lng())
-    this.getRestaurantsList(this.state.minRating, this.state.maxRating, bounds);
+    !this.state.isMarkerClicked && this.getApiData(center.lat(), center.lng(), this.state.radius);
   }
 
   /**
@@ -130,7 +170,6 @@ class App extends Component {
     this.setState(prevState => {
       return {
         showForm: !prevState.showForm,
-        infoMarkerClicked: !prevState.infoMarkerClicked,
         clickedLocation: {
           lat: event.latLng.lat(),
           lng: event.latLng.lng()
@@ -139,26 +178,47 @@ class App extends Component {
     })
   }
 
+  /**
+  * Set the state of "radius" when zooming in/out on the map
+  * 
+  * @param {event} event
+  */
   handleMapZoom = () => {
     if (this.state.map != null) {
       let currentZoom = this.state.map.getZoom();
       switch (currentZoom) {
         case 22:
         case 21:
+        case 20:
+          this.setState({ radius: "250" });
+          break;
         case 19:
         case 18:
+          this.setState({ radius: "500" });
+          break;
         case 17:
         case 16:
+          this.setState({ radius: "1000" });
+          break;
         case 15:
         case 14:
+          this.setState({ radius: "1500" });
+          break;
         case 13:
-        case 12:
-        case 11:
-        case 10:
           this.setState({ radius: "2000" });
-          this.getRestaurantsData(this.state.center.lat, this.state.center.lng, this.state.radius);
+          break;
+        case 12:
+          this.setState({ radius: "3000" });
+          break;
+        case 11:
+          this.setState({ radius: "7000" });
+          break;
+        case 10:
+          this.setState({ radius: "20000" });
           break;
         case 9:
+          this.setState({ radius: "40000" });
+          break;
         case 8:
         case 7:
         case 6:
@@ -169,16 +229,16 @@ class App extends Component {
         case 1:
         case 0:
           this.setState({ radius: "50000" });
-          this.getRestaurantsData(this.state.center.lat, this.state.center.lng, this.state.radius);
           break;
+        default:
+          this.setState({ radius: "2000" });
       }
-      console.log("Radius", this.state.radius);
     }
   }
 
   /**
   * Create a new restaurant object based on the data returned by the form,
-  * set the state of "restaurantsData" and "showForm" and update the list 
+  * set the state of "apiData" and "showForm" and update the list 
   * of restaurants accordingly when the form is submitted
   * 
   * @param {event} event
@@ -190,7 +250,7 @@ class App extends Component {
       result: {
         name: name.value,
         formatted_address: address.value,
-        rating: parseInt(stars.value),
+        rating: parseInt(stars.value), // parseInt() parses the value and returns an integer
         geometry: {
           location: {
             lat: this.state.clickedLocation.lat,
@@ -205,11 +265,11 @@ class App extends Component {
         ]
       }
     }
-    let updatedRestaurantsData = this.state.restaurantsData;
-    updatedRestaurantsData.push(newRestaurant);
+    let updatedRestaurantsByUser = this.state.addedRestaurantsByUser;
+    updatedRestaurantsByUser.push(newRestaurant);
     this.setState(prevState => {
       return {
-        restaurantsData: updatedRestaurantsData,
+        addedRestaurantsByUser: updatedRestaurantsByUser,
         showForm: !prevState.showForm
       }
     });
@@ -250,8 +310,8 @@ class App extends Component {
   }
 
   /**
-  * Set the state of "isMarkerClicked" and "infoMarkerClicked" based
-  * on the marker that has been clicked
+  * Set the state of "isMarkerClicked", "infoMarkerClicked" and
+  * "reviewsMarkerClicked" based on the marker that has been clicked
   * 
   * @param {event} event
   */
@@ -274,22 +334,27 @@ class App extends Component {
       infoMarkerClicked: infoMarkerClicked,
       reviewsMarkerClicked: reviewsMarkerClicked
     });
-    // this.getRestaurantsList(this.state.minRating, this.state.maxRating, this.state.bounds)
   }
 
+  /**
+  * Reset the state of "isMarkerClicked", "infoMarkerClicked" and
+  * "reviewsMarkerClicked" when the info window is closed
+  * 
+  */
   handleInfoWindowCloseClick = () => {
     this.setState({
-      isMarkerClicked: false
+      isMarkerClicked: false,
+      infoMarkerClicked: "",
+      reviewsMarkerClicked: []
     });
   }
 
   /**
   * Create an array of objects based on:
-  *   - restaurantsData
+  *   - apiData
   *   - filtered minRating
   *   - filtered maxRating
   *   - current bounds
-  *   - location of the clicked marker (if any)
   * 
   * The array includes the restaurants that should be displayed on the app.
   * A restaurant consists of an object including:
@@ -298,7 +363,7 @@ class App extends Component {
   *   - location: restaurant's latitude and longitude
   *   - reviews: arrays of restaurant's reviews
   *   - avgRatings: restaurant's average rating
-  *   - img: restaurant's image's URL
+  *   - img: restaurant's images' URL
   * 
   * @param {integer} minRating
   * @param {integer} maxRating
@@ -306,22 +371,27 @@ class App extends Component {
   */
   getRestaurantsList = (minRating, maxRating, bounds) => {
     let restaurantsList = [];
-    for (let restaurant of this.state.restaurantsData) {
-      let imgUrl = streetViewStaticApiEndpoint + "&location=" + restaurant.result.geometry.location.lat + "," + restaurant.result.geometry.location.lng;
-      let imgMetadataUrl = streetViewStaticApiMetadataEndpoint + "&location=" + restaurant.result.geometry.location.lat + "," + restaurant.result.geometry.location.lng;
-      let newRestaurant = {
-        name: restaurant.result.name,
-        address: restaurant.result.formatted_address,
-        location: restaurant.result.geometry.location,
-        reviews: restaurant.result.reviews,
-        avgRatings: restaurant.result.rating,
-        img: {
-          url: imgUrl,
-          metadataUrl: imgMetadataUrl
-        },
+    const checkDataset = (arrInput, arrOutput) => {
+      for (let restaurant of arrInput) {
+        let imgUrl = streetViewStaticApiEndpoint + "&location=" + restaurant.result.geometry.location.lat + "," + restaurant.result.geometry.location.lng;
+        let imgMetadataUrl = streetViewStaticApiMetadataEndpoint + "&location=" + restaurant.result.geometry.location.lat + "," + restaurant.result.geometry.location.lng;
+        let newRestaurant = {
+          name: restaurant.result.name,
+          address: restaurant.result.formatted_address,
+          location: restaurant.result.geometry.location,
+          reviews: restaurant.result.reviews,
+          avgRatings: restaurant.result.rating,
+          img: {
+            url: imgUrl,
+            metadataUrl: imgMetadataUrl
+          }
+        }
+        // Add the restaurant object to the array if it's within the map and the filters' values
+        bounds.contains(restaurant.result.geometry.location) && restaurant.result.rating >= minRating && restaurant.result.rating <= maxRating && arrOutput.push(newRestaurant);
       }
-      bounds.contains(restaurant.result.geometry.location) && restaurant.result.rating >= minRating && restaurant.result.rating <= maxRating && restaurantsList.push(newRestaurant);
     }
+    checkDataset(this.state.apiData, restaurantsList);
+    this.state.addedRestaurantsByUser.length && checkDataset(this.state.addedRestaurantsByUser, restaurantsList);
     this.setState({ restaurantsList: restaurantsList })
   }
 
@@ -347,24 +417,12 @@ class App extends Component {
           infoMarkerClicked={this.state.infoMarkerClicked}
         />
     )
-    // const reviewsMarkerClicked = [];
-    // if(this.state.isMarkerClicked){
-    //   reviewsMarkerClicked = this.state.infoMarkerClicked.reviews.map(
-    //     review =>
-    //       <Review
-    //         key={review.time}
-    //         comment={review.text}
-    //         rating={review.rating}
-    //       />
-    //   );
-    // }
     return (
       <div id="app" >
-
         {/* Show the Form only if "showForm" is true i.e if the user clicked on the map */}
         {
           this.state.showForm &&
-          <div id="popup">
+          <div class="popup">
             <Form
               onSubmit={this.handleFormSubmit}
               onClick={this.handleFormClick}
@@ -408,7 +466,13 @@ class App extends Component {
 
         {/* div block that contains the filters and the restaurants' list*/}
         {this.state.isLoading ?
-          <div id="side-panel">
+          <div class="popup">
+            <div class="loading">
+              <div class="spinner">
+                <div>
+                </div>
+              </div>
+            </div>
             <h1>Loading data...</h1>
           </div> :
           <div id="side-panel">
