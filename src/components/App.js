@@ -422,7 +422,7 @@ class App extends Component {
         {/* Show the Form only if "showForm" is true i.e if the user clicked on the map */}
         {
           this.state.showForm &&
-          <div class="popup">
+          <div className="popup">
             <Form
               onSubmit={this.handleFormSubmit}
               onClick={this.handleFormClick}
@@ -466,9 +466,9 @@ class App extends Component {
 
         {/* div block that contains the filters and the restaurants' list*/}
         {this.state.isLoading ?
-          <div class="popup">
-            <div class="loading">
-              <div class="spinner">
+          <div className="popup">
+            <div className="loading">
+              <div className="spinner">
                 <div>
                 </div>
               </div>
